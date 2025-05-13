@@ -1,0 +1,10 @@
+device_id,server_id,enc_key,hash_key,challenge,response
+DEV_MPY8UL51,Demo_Server,vobL8rCM6j49KtZWdEMgFM37K46BRrcu4nlgurVOsgA=,808650,"[ 1 -1  1  1 -1  1  1 -1 -1  1  1  1 -1  1  1  1 -1 -1 -1  1 -1  1  1 -1
+ -1  1 -1 -1 -1  1 -1  1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1  1 -1  1 -1 -1 -1
+  1  1 -1 -1  1 -1 -1  1 -1 -1  1  1  1 -1 -1  1]",0
+DEV_IUPWVXKA,Demo_Server,I-Gf1RH08_yU904c99_dyUYwTy1GL3Mwz1qsQ0-5A2Q=,017176,"[-1 -1 -1  1 -1 -1  1  1  1  1  1  1  1  1 -1 -1  1  1  1  1 -1 -1  1 -1
+  1  1 -1 -1 -1 -1  1  1  1 -1 -1  1 -1 -1  1  1  1 -1 -1  1 -1  1  1  1
+ -1  1 -1  1 -1  1 -1 -1  1 -1  1 -1  1  1  1 -1]",1
+DEV_3P206D2E,Demo_Server,E8djPzOqIzFQUpYogb1L-Z8p2Hgu4oyHjkY4OwpSnLk=,562107,"[ 1 -1 -1  1  1 -1  1 -1 -1  1 -1  1  1  1  1 -1 -1  1 -1  1 -1 -1 -1 -1
+  1 -1  1 -1  1 -1 -1  1 -1 -1 -1  1  1 -1 -1  1  1  1  1 -1  1 -1 -1 -1
+ -1  1 -1 -1 -1  1 -1  1  1 -1  1  1  1  1  1 -1]",1

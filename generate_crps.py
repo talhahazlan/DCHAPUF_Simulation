@@ -1,32 +1,41 @@
 import numpy as np
+import os
+import hashlib
 import pandas as pd
 from pypuf.simulation import ArbiterPUF
 from pypuf.io import random_inputs
 
 class DynamicController:
-    def __init__(self, seed=0xDEADBEEF, n=64):
-        self.seed = seed
+    def __init__(self, n=64, initial_state=None):
         self.n = n
-        self.lfsr_state = seed
+        self.lfsr_state = initial_state if initial_state else int.from_bytes(os.urandom(8), 'big')
 
-    def lfsr_step(self):
-        feedback = (self.lfsr_state >> 0) ^ (self.lfsr_state >> 1) ^ (self.lfsr_state >> 3) ^ (self.lfsr_state >> 4)
-        self.lfsr_state = (self.lfsr_state >> 1) | ((feedback & 1) << 63)
-
-    def get_mask(self):
+    def get_mask_and_threshold(self, challenge):
+        # Convert state and challenge to bytes for hashing
+        state_bytes = self.lfsr_state.to_bytes(8, 'big')
+        challenge_bytes = challenge.astype(np.uint8).tobytes()
+        
+        # Create SHA-256 hash of state + challenge
+        h = hashlib.sha256()
+        h.update(state_bytes + challenge_bytes)
+        digest = h.digest()
+        
+        # Convert hash to bit array
+        hash_bits = np.unpackbits(np.frombuffer(digest, dtype=np.uint8))
+        
+        # Generate mask from first n bits
         mask = 0
-        for _ in range(self.n):
-            mask = (mask << 1) | (self.lfsr_state & 1)
-            self.lfsr_step()
-        return mask
-
-    def dynamic_threshold(self):
-        return (self.lfsr_state & 0b1111) % 5
+        for i in range(self.n):
+            mask = (mask << 1) | hash_bits[i]
+            
+        # Generate threshold from next 4 bits
+        threshold = sum(hash_bits[self.n:self.n+4] << np.arange(4)) % 5
+        
+        return mask, threshold
 
 class ROPUF:
-    def __init__(self, n=64):
-        np.random.seed(42)  # Fixed seed for reproducibility
-        self.freqs = np.random.normal(1e6, 1e4, n)
+    def __init__(self, n=64, lfsr_state=None):
+        self.freqs = np.random.default_rng(lfsr_state).normal(1e6, 1e4, n)
 
     def get_response(self, challenge):
         idx = np.where(challenge == 1)[0]
@@ -35,46 +44,49 @@ class ROPUF:
         return 1 if self.freqs[i] > self.freqs[j] else 0
 
 class BRPUF:
-    def __init__(self, n=64):
-        np.random.seed(42)  # Fixed seed for reproducibility
-        self.bias = np.random.normal(0, 1, n)
+    def __init__(self, n=64, lfsr_state=None):
+        self.bias = np.random.default_rng(lfsr_state).normal(0, 1, n)
 
     def get_response(self, challenge):
         return 1 if np.dot(self.bias, challenge) > 0 else 0
 
 class DCHPUF:
-    def __init__(self, n=64):
+    def __init__(self, n=64, lfsr_state=None):
         self.n = n
         self.controller = DynamicController(n=n)
-        self.arbiter = ArbiterPUF(n=n, seed=42)
-        self.ro = ROPUF(n=n)
-        self.br = BRPUF(n=n)
+        seed = lfsr_state if lfsr_state is not None else int.from_bytes(os.urandom(8), 'big')
+        self.arbiter = ArbiterPUF(n=n, seed=seed)
+        self.ro = ROPUF(n=n, lfsr_state=seed)
+        self.br = BRPUF(n=n, lfsr_state=seed)
+
+    def update_seed(self, new_seed: int):
+        """Persist LFSR state across sessions"""
+        self.controller.lfsr_state = new_seed
+        self.arbiter = ArbiterPUF(n=self.n, seed=new_seed)
+        self.ro = ROPUF(n=self.n, lfsr_state=new_seed)
+        self.br = BRPUF(n=self.n, lfsr_state=new_seed)
 
     def get_response(self, challenge, debug=False):
         challenge_binary = np.where(challenge == -1, 0, 1)
-        mask = self.controller.get_mask()
+        mask, threshold = self.controller.get_mask_and_threshold(challenge_binary) 
         mask_bits = np.array([(mask >> i) & 1 for i in reversed(range(self.n))], dtype=np.uint8)
         masked_challenge = challenge_binary ^ mask_bits
         masked_challenge_pypuf = np.where(masked_challenge == 0, -1, 1)
-        
-        threshold = self.controller.dynamic_threshold()
+
         arbiter_active = (masked_challenge.sum() > threshold)
-        ro_active = (masked_challenge.sum() % 2 == 0)
+        ro_active = (self.controller.lfsr_state % 2 == 0)
         br_active = not ro_active
 
-        # Convert all responses to 0/1 format before XOR
-        r_arbiter = (self.arbiter.eval(masked_challenge_pypuf.reshape(1, -1))[0] + 1) // 2
-        r_ro = self.ro.get_response(masked_challenge)
-        r_br = self.br.get_response(masked_challenge)
+        r_arbiter = (self.arbiter.eval(masked_challenge_pypuf.reshape(1, -1))[0] + 1) // 2 if arbiter_active else 0
+        r_ro = self.ro.get_response(masked_challenge) if ro_active else 0
+        r_br = self.br.get_response(masked_challenge) if br_active else 0
+
         response = r_arbiter ^ r_ro ^ r_br
 
         if debug:
-            print(f"\nChallenge: {challenge[:5]}... (first 5 bits)")
-            print(f"Mask: {mask:064b}"[:20]+"...")
-            print(f"Threshold: {threshold}")
-            print(f"Arbiter: {r_arbiter}, RO: {r_ro}, BR: {r_br}")
-            print(f"Final Response: {response}")
-            
+            print(f"Masked challenge: {masked_challenge[:5]}...")
+            print(f"Arbiter active: {arbiter_active}, RO active: {ro_active}, BR active: {br_active}")
+            print(f"Response: {response}")
 
         return response
 

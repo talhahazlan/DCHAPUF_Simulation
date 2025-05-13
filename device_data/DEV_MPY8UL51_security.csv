@@ -1,0 +1,4 @@
+server_id,enc_key,hash_key,challenge,response
+Demo_Server,vobL8rCM6j49KtZWdEMgFM37K46BRrcu4nlgurVOsgA=,808650,"[ 1 -1  1  1 -1  1  1 -1 -1  1  1  1 -1  1  1  1 -1 -1 -1  1 -1  1  1 -1
+ -1  1 -1 -1 -1  1 -1  1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1  1 -1  1 -1 -1 -1
+  1  1 -1 -1  1 -1 -1  1 -1 -1  1  1  1 -1 -1  1]",0
