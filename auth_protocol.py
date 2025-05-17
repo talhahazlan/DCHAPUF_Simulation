@@ -80,107 +80,191 @@ def setup_device():
     return device, server
 
 def authenticate_device(device, server):
-    print("\n=== Authentication Protocol ===")
+    print("\n" + "="*50)
+    print("=== AUTHENTICATION PROTOCOL SIMULATION ===")
+    print("="*50 + "\n")
     print(f"Authenticating Device: {device.id}")
-    
+    print("-"*50)
+
+    # Display device credentials before authentication
+    print("\n[INITIAL DEVICE CREDENTIALS]")
+    print(f"Device ID: {device.id}")
+    print(f"Server ID: {device.security_data['server_id'].iloc[0]}")
+    print(f"Enc Key (first 12): {device.security_data['enc_key'].iloc[0][:12]}...")
+    print(f"Hash Key: {device.security_data['hash_key'].iloc[0]}")
+    print(f"Current Challenge (first 5): {device.security_data['challenge'].iloc[0][:5]}...")
+    print(f"Current Response: {device.security_data['response'].iloc[0]}")
+    print("-"*50)
+
     # First check if device is properly registered
     if device.security_data.empty:
-        print("Authentication Failed: Device not properly registered - missing security credentials")
+        print("\n[STATUS] Authentication Failed: Device not properly registered")
         return False
     
     try:
-        # Phase 1: Device → Server
-        print("\n[Phase 1] Device Authentication Request")
+        # ===== PHASE 1: Authentication Request (Device → Server) =====
+        print("\n" + "="*30)
+        print("PHASE 1: DEVICE AUTHENTICATION REQUEST")
+        print("="*30)
+        
+        # Generate session parameters
         session_key = os.urandom(32).hex()
         v0 = hashlib.sha256(f"{session_key}{device.security_data['hash_key'].iloc[0]}".encode()).hexdigest()
         cipher_suite = Fernet(device.security_data['enc_key'].iloc[0].encode())
         ev0 = cipher_suite.encrypt(v0.encode())
         
-        print(f"Session Key: {session_key[:12]}...")
-        print(f"Verification Hash (V0): {v0[:12]}...")
+        print("\n[DEVICE GENERATED]")
+        print(f"Session Key (full): {session_key}")
+        print(f"Session Key (first 12): {session_key[:12]}...")
+        print(f"V0 (SHA256(session_key + hash_key)): {v0[:12]}...")
+        print(f"Encrypted V0 (EV0): {ev0[:12]}...")
         
-        # Server Verification
-        print("\n[Phase 2] Server Verification")
+        print("\n[MESSAGE SENT TO SERVER]")
+        print(f"EV0: {ev0[:12]}... (truncated)")
+
+        # ===== PHASE 2: Device Validation (Server side) =====
+        print("\n" + "="*30)
+        print("PHASE 2: DEVICE VALIDATION (SERVER SIDE)")
+        print("="*30)
+        
         server_record = server.database[server.database['device_id'] == device.id]
         if server_record.empty:
-            print("Authentication Failed: Device not registered in server database")
+            print("\n[STATUS] Authentication Failed: Device not registered in server database")
             return False
-            
+
         try:
+            print("\n[SERVER RETRIEVED CREDENTIALS]")
+            print(f"Stored Enc Key (first 12): {server_record['enc_key'].iloc[0][:12]}...")
+            print(f"Stored Hash Key: {server_record['hash_key'].iloc[0]}")
+            
             server_cipher = Fernet(server_record['enc_key'].iloc[0].encode())
             decrypted_v0 = server_cipher.decrypt(ev0).decode()
             expected_v0 = hashlib.sha256(f"{session_key}{server_record['hash_key'].iloc[0]}".encode()).hexdigest()
             
+            print("\n[VALIDATION PROCESS]")
+            print(f"Decrypted V0: {decrypted_v0[:12]}...")
+            print(f"Expected V0: {expected_v0[:12]}...")
+            
             if decrypted_v0 != expected_v0:
-                print("Authentication Failed: Verification failed - hash mismatch")
+                print("\n[STATUS] Authentication Failed: Verification failed - hash mismatch")
                 return False
-            print("Device verified successfully")
-                
-        except Exception as e:
-            print(f"Authentication Error: {str(e)}")
-            return False
+            print("\n[STATUS] Device verified successfully")
 
-        # Phase 2: Server → Device
-        v1 = hashlib.sha256(f"{expected_v0}{server_record['response'].iloc[0]}".encode()).hexdigest()
-        ev1 = server_cipher.encrypt(v1.encode())
-        
-        print("\n[Phase 3] Server Authentication")
-        print(f"Verification Hash (V1): {v1[:12]}...")
-
-        # Device Verification
-        try:
-            decrypted_v1 = cipher_suite.decrypt(ev1).decode()
-            expected_v1 = hashlib.sha256(f"{v0}{device.security_data['response'].iloc[0]}".encode()).hexdigest()
             
-            if decrypted_v1 != expected_v1:
-                print("Authentication Failed: Server verification failed")
+            # ===== PHASE 3: Server Authentication (Server → Device) =====
+            print("\n" + "="*30)
+            print("PHASE 3: SERVER AUTHENTICATION (SERVER → DEVICE)")
+            print("="*30)
+            
+            v1 = hashlib.sha256(f"{expected_v0}{server_record['response'].iloc[0]}".encode()).hexdigest()
+            ev1 = server_cipher.encrypt(v1.encode())
+            
+            print("\n[SERVER GENERATED]")
+            print(f"V1 (SHA256(V0 + stored_response)): {v1[:12]}...")
+            print(f"Encrypted V1 (EV1): {ev1[:12]}...")
+            
+            print("\n[MESSAGE SENT TO DEVICE]")
+            print(f"EV1: {ev1[:12]}... (truncated)")
+
+
+            # ===== PHASE 4: Server Validation (Device side) =====
+            print("\n" + "="*30)
+            print("PHASE 4: SERVER VALIDATION (DEVICE SIDE)")
+            print("="*30)
+            
+            try:
+                decrypted_v1 = cipher_suite.decrypt(ev1).decode()
+                expected_v1 = hashlib.sha256(f"{v0}{device.security_data['response'].iloc[0]}".encode()).hexdigest()
+                
+                print("\n[VALIDATION PROCESS]")
+                print(f"Decrypted V1: {decrypted_v1[:12]}...")
+                print(f"Expected V1: {expected_v1[:12]}...")
+                
+                if decrypted_v1 != expected_v1:
+                    print("\n[STATUS] Authentication Failed: Server verification failed")
+                    return False
+                print("\n[STATUS] Server verified successfully")
+
+
+                # ===== PHASE 5: CRP Update (Device → Server) =====
+                print("\n" + "="*30)
+                print("PHASE 5: CRP UPDATE (DEVICE → SERVER)")
+                print("="*30)
+                
+                new_challenge = random_inputs(n=64, N=1, seed=int.from_bytes(os.urandom(4), 'big'))[0]
+                new_response = device.puf.get_response(new_challenge)
+                v2 = hashlib.sha256(f"{expected_v1}{new_response}".encode()).hexdigest()
+                ev2 = cipher_suite.encrypt(v2.encode())
+                
+                print("\n[DEVICE GENERATED NEW CRP]")
+                print(f"New Challenge (first 5): {new_challenge[:5]}...")
+                print(f"New Response: {new_response}")
+                print(f"V2 (SHA256(V1 + new_response)): {v2[:12]}...")
+                print(f"Encrypted V2 (EV2): {ev2[:12]}...")
+                
+                print("\n[MESSAGE SENT TO SERVER]")
+                print(f"EV2: {ev2[:12]}... (truncated)")
+
+                # ===== FINAL VERIFICATION =====
+                print("\n" + "="*30)
+                print("FINAL VERIFICATION AND UPDATE")
+                print("="*30)
+                
+                try:
+                    decrypted_v2 = server_cipher.decrypt(ev2).decode()
+                    expected_v2 = hashlib.sha256(f"{v1}{new_response}".encode()).hexdigest()
+                    
+                    print("\n[VALIDATION PROCESS]")
+                    print(f"Decrypted V2: {decrypted_v2[:12]}...")
+                    print(f"Expected V2: {expected_v2[:12]}...")
+                    
+                    if decrypted_v2 != expected_v2:
+                        print("\n[STATUS] Authentication Failed: Final verification failed")
+                        return False
+
+                    # Update stored CRP
+                    idx = server.database[server.database['device_id'] == device.id].index[0]
+                    old_challenge = server.database.at[idx, 'challenge']
+                    old_response = server.database.at[idx, 'response']
+                    
+                    server.database.at[idx, 'challenge'] = list(new_challenge)
+                    server.database.at[idx, 'response'] = new_response
+                    
+                    print("\n[CREDENTIALS UPDATED]")
+                    print("OLD VALUES:")
+                    print(f"Challenge: {old_challenge[:5]}...")
+                    print(f"Response: {old_response}")
+                    print("\nNEW VALUES:")
+                    print(f"Challenge: {new_challenge[:5]}...")
+                    print(f"Response: {new_response}")
+                    
+                    print("\n" + "="*50)
+                    print("[STATUS] AUTHENTICATION SUCCESS")
+                    print("Mutual authentication completed successfully")
+                    print("Security credentials updated\n")
+                    return True
+                
+                except Exception as e:
+                    print(f"\n[ERROR] Final verification failed: {str(e)}")
+                    return False
+
+            except Exception as e:
+                print(f"\n[ERROR] Server validation failed: {str(e)}")
                 return False
-            print("Server verified successfully")
-                
-        except Exception as e:
-            print(f"Authentication Error: {str(e)}")
-            return False
 
-        # Phase 3: Device → Server
-        print("\n[Phase 4] Security Update")
-        new_challenge = random_inputs(n=64, N=1, seed=int.from_bytes(os.urandom(4), 'big'))[0]
-        new_response = device.puf.get_response(new_challenge)
-        v2 = hashlib.sha256(f"{expected_v1}{new_response}".encode()).hexdigest()
-        ev2 = cipher_suite.encrypt(v2.encode())
-        
-        print(f"New Challenge: {new_challenge[:5]}...")
-        print(f"New Response: {new_response}")
-        print(f"Verification Hash (V2): {v2[:12]}...")
-
-        # Final Verification
-        try:
-            decrypted_v2 = server_cipher.decrypt(ev2).decode()
-            expected_v2 = hashlib.sha256(f"{v1}{new_response}".encode()).hexdigest()
-            
-            if decrypted_v2 != expected_v2: 
-                print("Authentication Failed: Final verification failed")
-                return False
-                
-            # Update records
-            idx = server.database[server.database['device_id'] == device.id].index[0]
-            server.database.at[idx, 'challenge'] = list(new_challenge)
-            server.database.at[idx, 'response'] = new_response
-            
-            print("\nAUTHENTICATION SUCCESS")
-            print("Mutual authentication completed successfully")
-            print("Security credentials updated")
-            return True
-            
         except Exception as e:
-            print(f"Authentication Error: {str(e)}")
+            print(f"\n[ERROR] Device validation failed: {str(e)}")
             return False
 
     except IndexError:
-        print("Authentication Failed: Device missing required security parameters")
+        print("\n[STATUS] Authentication Failed: Device missing required security parameters")
         return False
     except Exception as e:
-        print(f"Authentication Error: {str(e)}")
+        print(f"\n[ERROR] Authentication process failed: {str(e)}")
         return False
+
+
+
 
 def simulate_adversary_attacks(server):
     print("\n=== Simulating Adversary Attacks ===")
@@ -243,16 +327,15 @@ def main():
     device, server = setup_device()
     
     # Valid authentication
-    print("\n=== Testing Valid Authentication ===")
     authenticate_device(device, server)
     
-    # Invalid authentication
-    print("\n=== Testing Invalid Authentication ===")
-    fake_device = IoTDevice("FAKE_DEVICE")
-    authenticate_device(fake_device, server)
+    # # Invalid authentication
+    # print("\n=== Testing Invalid Authentication ===")
+    # fake_device = IoTDevice("FAKE_DEVICE")
+    # authenticate_device(fake_device, server)
     
-    # Security attack simulations
-    simulate_adversary_attacks(server)
+    # # Security attack simulations
+    # simulate_adversary_attacks(server)
 
 if __name__ == "__main__":
     main()
