@@ -1,0 +1,4 @@
+server_id,enc_key,hash_key,challenge,response
+Demo_Server,9g8b-uIcJc0shASF_3jCjL-wDvdZU-PWpJHXcdu5WUU=,8ac278ef10510a27,"[ 1  1 -1 -1  1  1  1  1 -1  1  1  1  1 -1 -1 -1 -1 -1 -1 -1 -1 -1  1 -1
+ -1 -1 -1  1  1 -1 -1 -1 -1  1  1 -1 -1  1  1 -1  1 -1  1  1 -1 -1  1 -1
+ -1 -1 -1  1 -1 -1  1  1 -1 -1  1  1  1 -1 -1  1]",1

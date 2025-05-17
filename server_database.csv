@@ -1,10 +1,10 @@
 device_id,server_id,enc_key,hash_key,challenge,response
-DEV_CYFUBHCR,Demo_Server,03VCLnVM772sDgJ5-2gUE8-GhmxUimnP4P1vfIJfy5Y=,827e1581a59eb68d,"[ 1 -1  1 -1  1 -1 -1  1  1  1 -1 -1  1 -1  1 -1 -1  1  1  1 -1  1  1  1
-  1 -1 -1 -1  1 -1 -1  1 -1  1 -1 -1  1  1  1  1 -1 -1 -1  1 -1  1  1  1
- -1  1 -1 -1  1 -1  1  1  1  1  1  1 -1  1  1 -1]",0
-DEV_P39LBNHN,Demo_Server,LOq2eZcEq_ppsG-SdfKt8PVHCWyBOvDX9wPi2H-AqGA=,7128eba9658d91e2,"[-1  1 -1 -1  1 -1  1 -1  1  1  1  1 -1 -1  1  1  1  1  1 -1  1  1 -1 -1
-  1  1  1  1 -1  1  1  1  1 -1 -1  1  1 -1 -1 -1 -1  1  1 -1 -1  1 -1  1
-  1  1  1  1  1  1 -1 -1 -1 -1  1 -1 -1 -1  1  1]",0
-DEV_2RJDS3TL,Demo_Server,Kb4qb8y96jH2ktm5bUbXNv_T6pdQRWYJxdsaCkPR3Ec=,4f60af2ab50ebf96,"[ 1 -1 -1  1 -1  1 -1  1 -1 -1  1 -1  1 -1 -1 -1 -1 -1  1 -1 -1  1 -1 -1
- -1  1  1  1  1  1  1 -1 -1 -1  1  1 -1 -1  1 -1  1 -1 -1 -1 -1 -1  1 -1
-  1  1 -1  1 -1 -1  1 -1  1  1  1  1  1 -1 -1 -1]",0
+DEV_OX7YG9WX,Demo_Server,v-YMZlzz57Cdo5FKLbnOizwYAlFv4_qiNJ4s1JjgcTs=,74d2e429a0af9379,"[ 1 -1 -1  1 -1 -1  1  1  1 -1 -1  1 -1 -1  1  1  1 -1 -1  1 -1 -1  1 -1
+  1 -1  1  1  1  1  1 -1  1 -1 -1  1  1  1 -1 -1  1  1  1  1 -1  1  1  1
+  1  1 -1 -1  1 -1 -1 -1  1  1  1 -1 -1  1  1  1]",1
+DEV_6IA9CHE7,Demo_Server,izqZyVI1JplkLi6vnr8bEC0x8cgaLmu3YmHxg0jzjLo=,5ce8728a7c94453c,"[-1  1  1  1 -1 -1 -1  1  1  1  1  1 -1  1 -1 -1  1  1  1 -1 -1  1  1  1
+  1 -1 -1  1 -1  1  1 -1  1  1  1 -1 -1  1  1 -1 -1  1 -1 -1  1  1  1 -1
+  1 -1 -1 -1 -1  1 -1  1  1 -1  1  1  1  1  1  1]",0
+DEV_AB51BI0D,Demo_Server,AByg5MabMSG7oeNv-orVjKPmuWG4kXIkqlXUosr6YZ4=,bdfe31dd708b8323,"[ 1 -1 -1 -1 -1 -1 -1 -1 -1  1 -1  1 -1 -1  1  1 -1 -1 -1  1 -1 -1  1  1
+ -1 -1 -1 -1 -1  1 -1 -1 -1  1 -1 -1  1  1  1  1  1  1  1  1  1  1 -1 -1
+ -1  1  1 -1 -1 -1 -1 -1  1 -1 -1  1 -1  1 -1 -1]",1

@@ -15,19 +15,19 @@ class IoTDevice:
             'server_id', 'enc_key', 'hash_key', 'challenge', 'response'
         ])
 
-    def process_reg2(self, reg2_data):
-        """Process REG2 message from server"""
-        response = self.puf.get_response(reg2_data['challenge'])
+    def receive_registration_parameters(self, msg_b):
+        """Process Message B from server"""
+        response = self.puf.get_response(msg_b['challenge'])
         self.security_data.loc[len(self.security_data)] = {
-            'server_id': reg2_data['server_id'],
-            'enc_key': reg2_data['enc_key'],
-            'hash_key': reg2_data['hash_key'],
-            'challenge': reg2_data['challenge'],
+            'server_id': msg_b['server_id'],
+            'enc_key': msg_b['enc_key'],
+            'hash_key': msg_b['hash_key'],
+            'challenge': msg_b['challenge'],
             'response': response
         }
         return response
 
-class AuthenticationServer:
+class RegistrationServer:
     def __init__(self):
         self.id = "Demo_Server"
         self.database = pd.DataFrame(columns=[
@@ -36,18 +36,18 @@ class AuthenticationServer:
         ])
         self.current_registration = None
 
-    def generate_enc_key(self):
+    def create_encryption_key(self):
         return Fernet.generate_key().decode()
 
-    def generate_hash_key(self):
-        return hashlib.sha256(os.urandom(32)).hexdigest()[:16]  # 16-byte key
+    def create_hash_key(self):
+        return hashlib.sha256(os.urandom(32)).hexdigest()[:16]  # 16-character hash key
 
-    def process_reg1(self, device_id):
-        """Process REG1 message from device"""
+    def process_msg_a(self, device_id):
+        """Handle Message A: DeviceID sent to server"""
         self.current_registration = {
             'device_id': device_id,
-            'enc_key': self.generate_enc_key(),
-            'hash_key': self.generate_hash_key(),
+            'enc_key': self.create_encryption_key(),
+            'hash_key': self.create_hash_key(),
             'challenge': random_inputs(n=64, N=1, seed=int.from_bytes(os.urandom(4), 'big'))[0]
         }
         return {
@@ -57,8 +57,8 @@ class AuthenticationServer:
             'challenge': self.current_registration['challenge']
         }
 
-    def process_reg3(self, response):
-        """Process REG3 message from device"""
+    def process_msg_c(self, response):
+        """Handle Message C: Final response from device"""
         if self.current_registration:
             self.database.loc[len(self.database)] = {
                 **self.current_registration,
@@ -67,54 +67,62 @@ class AuthenticationServer:
             }
             self.current_registration = None
 
-def simulate_multi_device_setup(num_devices=3):
-    print(f"=== Setup Phase for {num_devices} Devices ===")
-    server = AuthenticationServer()
+def simulate_setup_phase(device_count=3):
+    print(f"\n=== Setup Phase for {device_count} Devices ===")
+    server = RegistrationServer()
     devices = []
     
-    # Create device_data folder if it doesn't exist
     device_data_dir = Path("device_data")
     device_data_dir.mkdir(exist_ok=True)
-    
-    for i in range(num_devices):
+
+    for i in range(device_count):
         device_id = f"DEV_{''.join(np.random.choice(list('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 8))}"
         device = IoTDevice(device_id)
         devices.append(device)
+
+        print(f"\n--- Device {i+1}: {device_id} ---")
         
-        print(f"\n=== Device {i+1}: {device_id} ===")
-        
-        # REG1: Device registration request
-        print("\n1. Device -> Server: REG1")
-        
-        # REG2: Server responds with security parameters
-        reg2_data = server.process_reg1(device_id)
-        print("\n2. Server -> Device: REG2")
-        print(f"   Encryption Key: {reg2_data['enc_key'][:10]}...")
-        print(f"   Hash Key: {reg2_data['hash_key']}")
-        print(f"   Challenge: {reg2_data['challenge'][:5]}...")
-        
-        # REG3: Device responds with PUF response
-        response = device.process_reg2(reg2_data)
-        print("\n3. Device -> Server: REG3")
+        # Message A: Device sends DeviceID
+        print("1. Device → Server: Message A (Device ID)")
+        msg_b = server.process_msg_a(device_id)
+
+        # Message B: Server sends security material
+        print("2. Server → Device: Message B (SID, ek, hk, C)")
+        print(f"   Encryption Key: {msg_b['enc_key'][:10]}...")
+        print(f"   Hash Key: {msg_b['hash_key']}")
+        print(f"   Challenge: {msg_b['challenge'][:5]}...")
+
+        # Message C: Device sends response
+        response = device.receive_registration_parameters(msg_b)
+        print("3. Device → Server: Message C (Response)")
         print(f"   PUF Response: {response}")
-        
-        # Server finalizes registration
-        server.process_reg3(response)
-        print("\n4. Server stores registration")
-        
-        # Save device data to device_data folder
+
+        # Finalize registration
+        server.process_msg_c(response)
+        print("4. Server stores registration entry")
+
+        # Save device data
         device_file = device_data_dir / f"{device_id}_security.csv"
         device.security_data.to_csv(device_file, index=False)
         print(f"   Saved device data to: {device_file}")
-    
-    # Save server database
-    server.database.to_csv('server_database.csv', index=False)
-    
-    print("\n=== Setup Complete ===")
-    print(f"\nServer Database ({len(server.database)} devices):")
+
+    # Save final server database
+    server.database.to_csv("server_database.csv", index=False)
+    print("\n=== Setup Phase Complete ===")
+
     print(server.database[['device_id', 'server_id', 'response']])
-    
+
+    # Display example of a device's 
+    print(f"\n=== Device Details for {devices[0].id} ===\n")
+    print(f"server_id: {devices[0].security_data['server_id'].iloc[0]}")
+    print(f"enc_key: {devices[0].security_data['enc_key'].iloc[0][:12]}...")  # First 12 chars
+    print(f"hash_key: {devices[0].security_data['hash_key'].iloc[0]}")
+    print(f"challenge: {list(devices[0].security_data['challenge'].iloc[0][:4])}...")  # First 4 values
+    print(f"response: {devices[0].security_data['response'].iloc[0]}")
+
     return server, devices
 
-# Simulate setup for 3 devices
-server, devices = simulate_multi_device_setup(3)
+
+# Run the setup simulation
+if __name__ == "__main__":
+    server, devices = simulate_setup_phase(3)

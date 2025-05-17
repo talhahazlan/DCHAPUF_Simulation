@@ -1,0 +1,4 @@
+server_id,enc_key,hash_key,challenge,response
+Demo_Server,uM16WNbLeU0j23PnmawOxWsFSod3OXCxDtq027_Ol2Q=,13c29a1f20323afd,"[ 1 -1 -1  1 -1  1 -1 -1 -1  1  1 -1 -1  1  1 -1 -1 -1 -1  1 -1  1 -1 -1
+  1 -1 -1  1 -1  1  1 -1  1 -1  1 -1 -1  1 -1  1  1  1 -1  1  1 -1 -1  1
+ -1  1 -1  1  1 -1 -1  1 -1 -1 -1 -1 -1 -1  1  1]",1
