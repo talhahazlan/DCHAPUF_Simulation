@@ -1,6 +1,7 @@
 from cryptography.fernet import Fernet
 import pandas as pd
 import numpy as np
+import hashlib
 import os
 from pathlib import Path
 from pypuf.io import random_inputs
@@ -39,7 +40,7 @@ class AuthenticationServer:
         return Fernet.generate_key().decode()
 
     def generate_hash_key(self):
-        return ''.join([str(np.random.randint(0, 9)) for _ in range(6)])
+        return hashlib.sha256(os.urandom(32)).hexdigest()[:16]  # 16-byte key
 
     def process_reg1(self, device_id):
         """Process REG1 message from device"""

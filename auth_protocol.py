@@ -13,7 +13,7 @@ class IoTDevice:
         self.puf = DCHPUF(n=64)
         self.security_data = pd.DataFrame(columns=[
             'server_id', 'enc_key', 'hash_key', 'challenge', 'response'
-        ])
+        ])  
 
     def process_reg2(self, reg2_data):
         response = self.puf.get_response(reg2_data['challenge'])
@@ -38,7 +38,7 @@ class AuthenticationServer:
         return Fernet.generate_key().decode()
 
     def generate_hash_key(self):
-        return ''.join([str(np.random.randint(0, 9)) for _ in range(6)])
+        return hashlib.sha256(os.urandom(32)).hexdigest()[:16]  # 16-byte key
 
     def process_reg1(self, device_id):
         return {
@@ -157,7 +157,7 @@ def authenticate_device(device, server):
             decrypted_v2 = server_cipher.decrypt(ev2).decode()
             expected_v2 = hashlib.sha256(f"{v1}{new_response}".encode()).hexdigest()
             
-            if decrypted_v2 != expected_v2:
+            if decrypted_v2 != expected_v2: 
                 print("Authentication Failed: Final verification failed")
                 return False
                 
