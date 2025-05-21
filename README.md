@@ -60,6 +60,7 @@ pip install numpy pandas matplotlib scikit-learn cryptography tensorflow
 ```bash
 python3.8 generate_crps.py 
 ```
+- Generate crps.csv file that would be use throughout the simulation
 
 4. **Register IoT Devices and Server:**
 
@@ -76,7 +77,7 @@ python3.8 auth_setup.py
 5. **Run the Mutual Authentication Protocol:**
 
 ```bash
-python3.8 protocol/auth_protocol.py
+python3.8 auth_protocol.py
 
 ```
 
