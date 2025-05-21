@@ -1,7 +1,7 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
-from .base_attack import load_data  
+from base_attack import load_data  
 
 def weak_attack():
     # Load and verify data
@@ -14,7 +14,6 @@ def weak_attack():
         tf.keras.layers.Dense(16, activation='relu'),                     # Layer 2: 16 neurons
         tf.keras.layers.Dense(1, activation='sigmoid')                    # Output layer
     ])
-
 
     # Compile model
     model.compile(

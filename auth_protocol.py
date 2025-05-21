@@ -57,7 +57,7 @@ class AuthenticationServer:
             'challenge': list(challenge),
             'response': response
         }
-
+# SIMULATION PROCESS
 def setup_device():
     print("\n=== Device Setup Phase ===")
     server = AuthenticationServer()
